@@ -1,7 +1,0 @@
-#!/bin/bash
-echo $HOME
-UP=$(uptime -p | grep -o '[^up].*$')
-SINCE=$(uptime -s)
-echo "system's uptime:"
-echo $UP
-echo "booted @" $SINCE
