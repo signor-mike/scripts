@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Check if a path argument was provided
+if [ -z "$1" ]; then
+  echo "Usage: $0 path [-q quality]"
+  exit 1
+fi
+
+# Check if the path exists
+if [ ! -d "$1" ]; then
+  echo "Error: path '$1' does not exist"
+  exit 1
+fi
+
+# Set default quality to 80 if not provided
+quality=80
+if [ "$2" = "-q" ]; then
+  # Check if quality value is provided
+  if [ -n "$3" ]; then
+    quality="$3"
+    # Check if quality is between 0 and 100
+    if ((quality < 0 || quality > 100)); then
+      echo "Error: quality must be between 0 and 100"
+      exit 1
+    fi
+  else
+    echo "Error: quality value is missing"
+    exit 1
+  fi
+fi
+
+# Create the OLD_ASSETS directory
+mkdir -p "$1/OLD_ASSETS"
+
+# Loop through all files in the specified directory and its subdirectories
+find "$1" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.mp4" -o -name "*.mov" -o -name "*.avi" -o -name "*.mkv" \) | while read file
+do
+  # Get the directory name where the file resides
+  dir=$(dirname "$file")
+  
+  # Get the file extension
+  extension="${file##*.}"
+
+  # Generate a new filename for the converted file with the .webp or .webm extension
+  new_file="${file%.*}.webp"
+  if [[ $extension == "mp4" || $extension == "mov" || $extension == "avi" || $extension == "mkv" ]]; then
+    new_file="${file%.*}.webm"
+  fi
+
+  # Use the cwebp or ffmpeg library to convert the file to WebP or WebM format
+  if [[ $extension == "mp4" || $extension == "mov" || $extension == "avi" || $extension == "mkv" ]]; then
+    ffmpeg -i "$file" -c:v libvpx-vp9 -crf $quality -b:v 0 -c:a libopus "$new_file"
+  else
+    cwebp -q $quality "$file" -o "$new_file"
+  fi
+
+  # Create the subdirectory structure in OLD_ASSETS
+  mkdir -p "OLD_ASSETS/$dir"
+  
+  # Move the original file to OLD_ASSETS
+  mv "$file" "OLD_ASSETS/$file"
+done
+
+# Calculate the space saved
+original_size=$(du -sb "${1}/OLD_ASSETS" | awk '{print $1}')
+converted_size=$(du -sb --exclude="${1}/OLD_ASSETS" "${1}" | awk '{print $1}')
+space_saved=$((original_size - converted_size))
+
+# Convert space saved to KB, MB or GB depending on its size
+if [ $space_saved -ge 1048576 ]; then
+  space_saved=$(echo "scale=2; $space_saved / 1048576" | bc)
+  space_saved="$space_saved MB"
+elif [ $space_saved -ge 1024 ]; then
+  space_saved=$(echo "scale=2; $space_saved / 1024" | bc)
+  space_saved="$space_saved KB"
+else
+  space_saved="$space_saved bytes"
+fi
+
+echo "Space saved: $space_saved"
+
+
+read -p "Do you want to delete the OLD_ASSETS folder? (y/n) " confirm_delete
+if [ "$confirm_delete" = "y" ]; then
+  rm -r "${1}/OLD_ASSETS"
+  echo "OLD_ASSETS folder deleted."
+else
+  echo "OLD_ASSETS folder not deleted."
+fi
+
+ 
+
