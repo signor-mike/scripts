@@ -118,12 +118,10 @@ fi
 
 # Add custom scripts to PATH for scripting.
 export PATH="$PATH:$HOME/Developer/scripts" 
-# gedit alias
-alias gedit='gnome-text-editor'
-# xdg-open alias
-alias openup='xdg-open'
+export PATH=$PATH:/usr/local/go/bin
 
 export ANDROID_HOME=/home/mike/Android/Sdk
+export JAVA_HOME="$(update-alternatives --query java | grep 'Value: ' | grep -o '/.*/jre')"
 intro
 export PATH=$PATH:$ANDROID_HOME/emulator
 export PATH=$PATH:$ANDROID_HOME/platform-tools
@@ -131,3 +129,11 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+function rntab() {
+  if [[ -z "$ORIG" ]]; then
+    ORIG=$PS1
+  fi
+  TITLE="\[\e]2;$*\a\]"
+  PS1=${ORIG}${TITLE}
+}
